@@ -158,3 +158,14 @@ To enable the pipeline, configure the following **CI/CD Variables** in your GitL
 | `DATABRICKS_HOST` | The Databricks workspace instance hostname | `https://dbc-xxxx.cloud.databricks.com` |
 | `DATABRICKS_TOKEN` | A personal access token for Databricks API access | `dapi...` (Masked & Hidden) |
 | `DATABRICKS_TARGET_PATH` | *(Optional)* Target path on Databricks Volume | `/Volumes/my_catalog/my_schema/my_volume/airtable_data.csv` |
+
+### Scheduling the Ingestion (Daily)
+
+To run the pipeline automatically once a day:
+1. In your GitLab project on the web, go to **Build > Pipeline schedules** (or **CI/CD > Schedules**).
+2. Click **New schedule**.
+3. Configure the schedule:
+   - **Description**: `Daily Airtable to Databricks Ingestion`
+   - **Interval Pattern**: Select **Daily** (or enter a custom Cron expression like `0 2 * * *` to run at 2 AM daily).
+   - **Target branch**: `main`
+4. Click **Save pipeline schedule**.

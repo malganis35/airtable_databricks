@@ -21,6 +21,10 @@ sync_airtable:
       - .uv-cache/
       - .venv/
 
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"      # Runs on schedules (e.g., daily)
+    - if: $CI_PIPELINE_SOURCE == "web"           # Allows manual runs from GitLab UI
+
   script:
     # 1. Install uv for fast dependency resolution
     - pip install uv
