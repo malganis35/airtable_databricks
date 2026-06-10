@@ -58,7 +58,7 @@ DATABRICKS_TARGET_PATH="/Volumes/mon_catalogue/mon_schema/mes_fichiers/airtable_
 
 Run the main scraping script:
 ```bash
-uv run script/main.py
+uv run airtable-databricks-ingestion
 ```
 
 ### What to Expect

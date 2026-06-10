@@ -1,86 +1,11 @@
+import os
 import asyncio
 from playwright.async_api import async_playwright
-import os
-import urllib.request
-import urllib.error
-
-
-def load_dotenv(dotenv_path=None):
-    if dotenv_path is None:
-        possible_paths = [
-            os.path.join(os.getcwd(), ".env"),
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-        ]
-        for path in possible_paths:
-            if os.path.exists(path):
-                dotenv_path = path
-                break
-    
-    if dotenv_path and os.path.exists(dotenv_path):
-        with open(dotenv_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, val = line.split("=", 1)
-                    key = key.strip()
-                    val = val.strip().strip('"').strip("'")
-                    os.environ[key] = val
-
-# Load environment variables at startup
-load_dotenv()
-
-def upload_to_databricks(file_path):
-    host = os.getenv("DATABRICKS_HOST")
-    token = os.getenv("DATABRICKS_TOKEN")
-    # Default to the path requested by the user if not specified in env
-    target_path = os.getenv("DATABRICKS_TARGET_PATH", "/Volumes/mon_catalogue/mon_schema/mes_fichiers/airtable_data.csv")
-
-    if not host or not token:
-        print("ℹ️ Databricks environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN) not set. Skipping upload.")
-        return
-
-    print(f"☁️ Uploading {file_path} to Databricks...")
-    if not host.startswith("https://"):
-        host = f"https://{host}"
-
-    # Ensure target path is formatted correctly for the endpoint (e.g. no leading slash)
-    clean_path = target_path.lstrip("/")
-    url = f"{host}/api/2.0/fs/files/{clean_path}"
-
-    try:
-        with open(file_path, "rb") as f:
-            file_data = f.read()
-
-        req = urllib.request.Request(
-            url,
-            data=file_data,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/octet-stream"
-            },
-            method="PUT"
-        )
-
-        with urllib.request.urlopen(req) as response:
-            if response.status in (200, 201):
-                print(f"✅ Successfully uploaded to Databricks Volume: {target_path}")
-            else:
-                print(f"❌ Upload failed with status code: {response.status}")
-    except urllib.error.HTTPError as e:
-        print(f"❌ HTTP Error during upload to Databricks: {e.code} - {e.reason}")
-        try:
-            error_details = e.read().decode("utf-8")
-            print(f"   Details: {error_details}")
-        except Exception:
-            pass
-        raise
-    except Exception as e:
-        print(f"❌ Unexpected error during upload to Databricks: {e}")
-        raise
+from .uploader import upload_to_databricks
+from . import config  # noqa: F401
 
 async def scrape_airtable_csv():
+    """Scrapes the shared Airtable view to download the table data as CSV, then uploads it."""
     url = os.getenv("AIRTABLE_URL")
     password = os.getenv("AIRTABLE_PASSWORD")
 
@@ -143,15 +68,13 @@ async def scrape_airtable_csv():
             await browser.close()
             raise RuntimeError("Unable to load the Airtable table after authentication.")
 
-        # --- YOUR EXACT SELECTOR IS INTEGRATED HERE ---
+        # Transcend Accept All cookie pop-up handling
         print("🍪 Checking Transcend 'Accept All' cookie pop-up...")
         try:
             btn_cookies_en = page.get_by_role("button", name="Accept All")
-            # Allow up to 5 seconds to appear
             if await btn_cookies_en.is_visible(timeout=5000):
                 await btn_cookies_en.click()
                 print("✅ 'Accept All' clicked and pop-up closed!")
-                # Short pause to let the page become clickable again
                 await asyncio.sleep(1) 
             else:
                 print("ℹ️ No 'Accept All' button detected.")
@@ -189,6 +112,3 @@ async def scrape_airtable_csv():
         print("Closing browser in 5 seconds...")
         await asyncio.sleep(5)
         await browser.close()
-
-if __name__ == "__main__":
-    asyncio.run(scrape_airtable_csv())
