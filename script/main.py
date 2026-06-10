@@ -25,7 +25,7 @@ def load_dotenv(dotenv_path=None):
                     val = val.strip().strip('"').strip("'")
                     os.environ[key] = val
 
-# Charge les variables d'environnement au démarrage
+# Load environment variables at startup
 load_dotenv()
 
 async def scrape_airtable_csv():
@@ -33,17 +33,17 @@ async def scrape_airtable_csv():
     password = os.getenv("AIRTABLE_PASSWORD")
 
     if not url or not password:
-        raise ValueError("Erreur: Les variables d'environnement AIRTABLE_URL et AIRTABLE_PASSWORD doivent être définies (par exemple dans un fichier .env)")
+        raise ValueError("Error: The AIRTABLE_URL and AIRTABLE_PASSWORD environment variables must be defined (e.g. in a .env file)")
 
-    print("🚀 Lancement du navigateur...")
+    print("🚀 Launching browser...")
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
         page = await browser.new_page()
         
-        print("🌐 Chargement de la page Airtable...")
+        print("🌐 Loading Airtable page...")
         await page.goto(url)
         
-        # 1ère gestion (Page de connexion en français)
+        # First handling (French login page)
         try:
             accept_button = page.locator('button', has_text='Tout accepter')
             if await accept_button.is_visible(timeout=3000):
@@ -51,74 +51,74 @@ async def scrape_airtable_csv():
         except Exception:
             pass
 
-        max_tentatives = 3
-        table_chargee = False
+        max_attempts = 3
+        table_loaded = False
 
-        print("🔑 Début du cycle d'authentification...")
-        for tentative in range(max_tentatives):
-            print(f"🔄 Tentative {tentative + 1}/{max_tentatives}...")
+        print("🔑 Starting authentication cycle...")
+        for attempt in range(max_attempts):
+            print(f"🔄 Attempt {attempt + 1}/{max_attempts}...")
             try:
                 champ_mdp = page.locator('input[type="password"]')
                 if await champ_mdp.is_visible(timeout=5000):
                     await champ_mdp.fill(password)
                     await page.keyboard.press("Enter")
                 
-                print("⏳ Attente du chargement de la table...")
+                print("⏳ Waiting for the table to load...")
                 await page.wait_for_selector('.table, .dataRow, #tableContainer', timeout=10000)
                 
-                print("✅ Table chargée !")
-                table_chargee = True
+                print("✅ Table loaded!")
+                table_loaded = True
                 break 
                 
             except Exception:
-                print(f"⚠️ Échec lors de la tentative {tentative + 1}.")
+                print(f"⚠️ Failed during attempt {attempt + 1}.")
                 await asyncio.sleep(2)
 
-        if not table_chargee:
-            print("❌ Impossible de charger la table. Lancement de l'inspecteur...")
+        if not table_loaded:
+            print("❌ Unable to load the table. Launching inspector...")
             await page.pause()
             await browser.close()
             return
 
-        # --- VOTRE SÉLECTEUR EXACT EST INTÉGRÉ ICI ---
-        print("🍪 Vérification de la pop-up de cookies Transcend 'Accept All'...")
+        # --- YOUR EXACT SELECTOR IS INTEGRATED HERE ---
+        print("🍪 Checking Transcend 'Accept All' cookie pop-up...")
         try:
             btn_cookies_en = page.get_by_role("button", name="Accept All")
-            # On lui laisse 5 secondes max pour apparaître
+            # Allow up to 5 seconds to appear
             if await btn_cookies_en.is_visible(timeout=5000):
                 await btn_cookies_en.click()
-                print("✅ 'Accept All' cliqué et pop-up fermée !")
-                # Petite pause pour que la page redevienne cliquable
+                print("✅ 'Accept All' clicked and pop-up closed!")
+                # Short pause to let the page become clickable again
                 await asyncio.sleep(1) 
             else:
-                print("ℹ️ Pas de bouton 'Accept All' détecté.")
+                print("ℹ️ No 'Accept All' button detected.")
         except Exception:
             pass
             
-        print("📥 Recherche du menu d'options (...) et du bouton de téléchargement...")
+        print("📥 Looking for options menu (...) and download button...")
         try:
-            print("👉 Ouverture du menu '...'")
+            print("👉 Opening the '...' menu")
             bouton_menu = page.get_by_role("button", name="More view options")
             await bouton_menu.click()
             
             await asyncio.sleep(1)
             
-            print("👉 Clic sur 'Download CSV'")
+            print("👉 Clicking 'Download CSV'")
             bouton_download = page.get_by_role("menuitem", name="Download CSV")
             
             async with page.expect_download(timeout=10000) as download_info:
                 await bouton_download.click() 
             
             download = await download_info.value
-            file_path = os.path.join(os.getcwd(), "donnees_airtable.csv")
+            file_path = os.path.join(os.getcwd(), "airtable_data.csv")
             await download.save_as(file_path)
-            print(f"🎉 BINGO ! Fichier téléchargé avec succès ici : {file_path}")
+            print(f"🎉 BINGO! File successfully downloaded to: {file_path}")
             
         except Exception as e:
-            print(f"❌ Erreur lors de l'interaction avec le menu : {e}")
+            print(f"❌ Error during menu interaction: {e}")
             await page.pause()
 
-        print("Fermeture du navigateur dans 5 secondes...")
+        print("Closing browser in 5 seconds...")
         await asyncio.sleep(5)
         await browser.close()
 
