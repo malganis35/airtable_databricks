@@ -12,3 +12,5 @@ wheels/
 # Environment variables & secrets
 .env
 
+# data
+*.csv
