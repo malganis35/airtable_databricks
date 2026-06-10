@@ -37,7 +37,7 @@ def upload_to_databricks(file_path):
         )
 
         with urllib.request.urlopen(req) as response:
-            if response.status in (200, 201):
+            if 200 <= response.status < 300:
                 print(f"✅ Successfully uploaded to Databricks Volume: {target_path}")
             else:
                 print(f"❌ Upload failed with status code: {response.status}")

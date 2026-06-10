@@ -73,6 +73,45 @@ uv run airtable-databricks-ingestion
 
 ---
 
+## Databricks Unity Catalog Setup
+
+To upload the downloaded CSV file to Databricks, you must configure a Catalog, Schema, and Volume in your Databricks workspace.
+
+You can execute the following SQL commands in a Databricks Notebook or SQL Editor (requires appropriate Unity Catalog creation privileges):
+
+```sql
+-- 1. Create the Catalog
+CREATE CATALOG IF NOT EXISTS mon_catalogue;
+
+-- 2. Create the Schema inside the Catalog
+CREATE SCHEMA IF NOT EXISTS mon_catalogue.mon_schema;
+
+-- 3. Create the Managed Volume to store the CSV files
+CREATE VOLUME IF NOT EXISTS mon_catalogue.mon_schema.mes_fichiers;
+```
+
+> [!NOTE]
+> Make sure that the path specified in your `DATABRICKS_TARGET_PATH` environment variable matches these entities:
+> `/Volumes/<catalog>/<schema>/<volume>/<filename.csv>`
+
+### Required Token Permissions (Unity Catalog)
+
+Databricks Personal Access Tokens (PAT) do not use OAuth-style granular scopes. Instead, the token inherits all permissions of the user or Service Principal that created it. 
+
+To successfully upload files, the token's identity must be granted the following privileges in Databricks Unity Catalog:
+- **`USE CATALOG`** on the destination catalog (e.g., `mon_catalogue`)
+- **`USE SCHEMA`** on the destination schema (e.g., `mon_schema`)
+- **`WRITE VOLUME`** on the destination managed volume (e.g., `mes_fichiers`)
+
+Example SQL to grant these privileges if needed:
+```sql
+GRANT USE CATALOG ON CATALOG mon_catalogue TO `user_or_group`;
+GRANT USE SCHEMA ON SCHEMA mon_catalogue.mon_schema TO `user_or_group`;
+GRANT WRITE VOLUME ON VOLUME mon_catalogue.mon_schema.mes_fichiers TO `user_or_group`;
+```
+
+---
+
 ## GitLab CI/CD Pipeline
 
 This project includes a pre-configured `.gitlab-ci.yml` pipeline that automates the extraction and loading process.
