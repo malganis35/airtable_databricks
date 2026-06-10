@@ -110,6 +110,34 @@ GRANT USE SCHEMA ON SCHEMA mon_catalogue.mon_schema TO `user_or_group`;
 GRANT WRITE VOLUME ON VOLUME mon_catalogue.mon_schema.mes_fichiers TO `user_or_group`;
 ```
 
+### Delta Table Ingestion (`airtable_data`)
+
+Once the CSV file is uploaded to the Volume, you can load it (for the first time) or update it (completely overwrite/replace) into a Delta Table in the same schema.
+
+#### Option A: Automated Table Refresh (via Python Script)
+If you configure a SQL Warehouse ID, the script will automatically trigger the Databricks SQL Statement Execution API to refresh the Delta table (`airtable_data`) immediately after uploading the CSV.
+
+1. Go to **SQL Warehouses** in Databricks and select your warehouse (e.g. *Serverless Starter Warehouse*).
+2. Under **Connection details**, locate the **SQL Warehouse ID** (a 16-character hexadecimal string).
+3. Add it to your `.env` file or GitLab CI/CD variables:
+   ```env
+   DATABRICKS_WAREHOUSE_ID="your-16-character-id"
+   ```
+
+#### Option B: Manual/Scheduled Ingestion (via Databricks Notebook / SQL Editor)
+You can run this SQL query manually or as a scheduled workflow inside Databricks:
+```sql
+CREATE OR REPLACE TABLE training_db.feedback.airtable_data AS
+SELECT * FROM read_files(
+  '/Volumes/training_db/feedback/raw_files/airtable_data.csv',
+  format => 'csv',
+  header => true,
+  inferSchema => true,
+  multiLine => true,
+  escape => '"'
+);
+```
+
 ---
 
 ## GitLab CI/CD Pipeline
