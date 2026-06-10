@@ -169,3 +169,22 @@ To run the pipeline automatically once a day:
    - **Interval Pattern**: Select **Daily** (or enter a custom Cron expression like `0 2 * * *` to run at 2 AM daily).
    - **Target branch**: `main`
 4. Click **Save pipeline schedule**.
+
+---
+
+## GitHub Actions Workflow
+
+This project also includes a pre-configured GitHub Actions workflow located in `.github/workflows/ingest.yml`.
+
+### Setup Instructions
+To enable automatic runs on GitHub:
+1. In your GitHub repository, go to **Settings > Secrets and variables > Actions**.
+2. Click **New repository secret** for each of the following variables:
+   - `AIRTABLE_URL`
+   - `AIRTABLE_PASSWORD`
+   - `DATABRICKS_HOST`
+   - `DATABRICKS_TOKEN`
+   - `DATABRICKS_TARGET_PATH` (optional)
+   - `DATABRICKS_WAREHOUSE_ID` (optional, for Delta table auto-refresh)
+3. The workflow is configured by default to run daily at 02:00 UTC.
+4. To run it manually: Go to the **Actions** tab in your repository, select the **Daily Airtable to Databricks Ingestion** workflow, and click **Run workflow**.

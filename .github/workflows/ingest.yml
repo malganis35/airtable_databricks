@@ -1,0 +1,59 @@
+name: Daily Airtable to Databricks Ingestion
+
+on:
+  schedule:
+    # Runs at 02:00 UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allows manual runs from the GitHub Actions tab
+
+jobs:
+  sync_airtable:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+
+    env:
+      # Use the Playwright browsers pre-installed in the Docker image
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      HEADLESS: "true"
+      
+      # Secrets loaded from GitHub Repository Secrets
+      AIRTABLE_URL: ${{ secrets.AIRTABLE_URL }}
+      AIRTABLE_PASSWORD: ${{ secrets.AIRTABLE_PASSWORD }}
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_TARGET_PATH: ${{ secrets.DATABRICKS_TARGET_PATH }}
+      DATABRICKS_WAREHOUSE_ID: ${{ secrets.DATABRICKS_WAREHOUSE_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv cache
+        uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies
+        run: |
+          uv sync
+        env:
+          UV_CACHE_DIR: .uv-cache
+
+      - name: Run ingestion script
+        run: uv run airtable-databricks-ingestion
+
+      - name: Upload downloaded CSV as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: airtable-data-${{ github.sha }}
+          path: airtable_data.csv
+          retention-days: 1
