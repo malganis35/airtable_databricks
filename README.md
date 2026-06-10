@@ -7,6 +7,7 @@ An automated ingestion script to download shared Airtable tables as CSV files. U
 - **Transcend Cookie Consent Handling**: Closes the "Accept All" cookie banner automatically.
 - **CSV Exporter Navigation**: Opens the View Options (`More view options`) menu and triggers `Download CSV`.
 - **Environment Isolation**: Securely loads target URL and passwords from a `.env` file.
+- **Databricks Upload**: Automatically uploads the downloaded CSV directly to a Databricks Volume using Databricks Workspace Files API.
 
 ---
 
@@ -43,6 +44,11 @@ Open the newly created `.env` file and set your target Airtable URL and credenti
 ```env
 AIRTABLE_URL="https://airtable.com/your-shared-view-url"
 AIRTABLE_PASSWORD="your-airtable-password"
+
+# Optional Databricks Upload Configuration (required if uploading to Databricks)
+DATABRICKS_HOST="https://your-databricks-instance.cloud.databricks.com"
+DATABRICKS_TOKEN="dapi..."
+DATABRICKS_TARGET_PATH="/Volumes/mon_catalogue/mon_schema/mes_fichiers/airtable_data.csv"
 ```
 
 > [!IMPORTANT]
@@ -62,4 +68,26 @@ uv run script/main.py
 4. Once the table displays, it will close the cookie banner if present.
 5. It will locate the "More view options" menu, click it, and trigger "Download CSV".
 6. The downloaded file will be saved in the root folder as `airtable_data.csv`.
-7. The browser closes automatically after 5 seconds.
+7. **(Optional)** If Databricks variables are configured, the script will upload the file directly to your Databricks Volume.
+8. The browser closes automatically after 5 seconds.
+
+---
+
+## GitLab CI/CD Pipeline
+
+This project includes a pre-configured `.gitlab-ci.yml` pipeline that automates the extraction and loading process.
+
+### CI/CD Pipeline Optimizations
+- **Browser Caching**: The pipeline uses the pre-installed Playwright browser binaries in the `mcr.microsoft.com/playwright/python` Docker image (`PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"`), avoiding the need to download browsers during pipeline runs.
+- **Dependency Caching**: Caches `.venv` and `uv` packages between pipeline runs to speed up execution.
+
+### Setup Instructions
+To enable the pipeline, configure the following **CI/CD Variables** in your GitLab repository (**Settings > CI/CD > Variables**):
+
+| Variable Name | Description | Example / Format |
+|---|---|---|
+| `AIRTABLE_URL` | The shared view URL to scrape | `https://airtable.com/...` |
+| `AIRTABLE_PASSWORD` | The password for the Airtable view | `Caotri...` (Masked & Hidden) |
+| `DATABRICKS_HOST` | The Databricks workspace instance hostname | `https://dbc-xxxx.cloud.databricks.com` |
+| `DATABRICKS_TOKEN` | A personal access token for Databricks API access | `dapi...` (Masked & Hidden) |
+| `DATABRICKS_TARGET_PATH` | *(Optional)* Target path on Databricks Volume | `/Volumes/my_catalog/my_schema/my_volume/airtable_data.csv` |

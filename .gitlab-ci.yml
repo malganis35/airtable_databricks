@@ -1,0 +1,41 @@
+stages:
+  - extract_and_load
+
+sync_airtable:
+  stage: extract_and_load
+  image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+
+  variables:
+    # Use the Playwright browsers pre-installed in the Docker image
+    PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
+    # Relocate the uv cache to the project directory so GitLab can cache it
+    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+    # Ensure Playwright runs headlessly
+    HEADLESS: "true"
+
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .uv-cache/
+      - .venv/
+
+  script:
+    # 1. Install uv for fast dependency resolution
+    - pip install uv
+    
+    # 2. Sync project dependencies using uv (creates / updates .venv)
+    - uv sync
+    
+    # 3. Run the extraction and load script
+    # This automatically uploads the CSV to Databricks if DATABRICKS_HOST and DATABRICKS_TOKEN are defined
+    - uv run script/main.py
+
+  artifacts:
+    name: "airtable-data-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - airtable_data.csv
+    expire_in: 1 day
+    # Keep artifacts on failure for debugging purposes
+    when: always
