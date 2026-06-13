@@ -3,7 +3,7 @@ stages:
 
 sync_airtable:
   stage: extract_and_load
-  image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+  image: mcr.microsoft.com/playwright/python:v1.60.0-jammy
 
   variables:
     # Use the Playwright browsers pre-installed in the Docker image
