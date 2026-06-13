@@ -11,7 +11,7 @@ jobs:
   sync_airtable:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+      image: mcr.microsoft.com/playwright/python:v1.60.0-jammy
 
     env:
       # Use the Playwright browsers pre-installed in the Docker image
