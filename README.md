@@ -2,6 +2,8 @@
 
 An automated ingestion script to download shared Airtable tables as CSV files. Using Playwright, this script automatically handles password authentication, cookies selection, and navigation to download the latest view data.
 
+![](docs/airtable_2_databricks.jpg)
+
 ## Features
 - **Automatic Authentication**: Inputs password on the Airtable share view.
 - **Transcend Cookie Consent Handling**: Closes the "Accept All" cookie banner automatically.
